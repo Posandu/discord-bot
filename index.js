@@ -32,6 +32,9 @@ client.once("ready", () => {
 client.on("messageCreate", async (message) => {
 	if (message.author.bot) return;
 	if (message.channel.type === "dm") return;
+	if (message.content.trim().toLowerCase() == "hi") {
+		message.react("👋");
+	}
 	if (!message.content.startsWith("+")) return;
 
 	const command = message.content.split(" ")[0].slice(1);
