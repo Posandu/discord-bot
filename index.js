@@ -26,19 +26,48 @@ const client = new Client({
 client.once("ready", () => {
 	console.log("Ready!");
 
-	client.user.setActivity("with the code");
+	let i = 0;
+
+	client.user.setPresence({
+		activities: [{
+			name: "Just woke up"
+		}],
+		status: ""
+	})
+
+	setInterval(() => {
+		let stuff = "with your mom,with daddy,with code,with Twitter,with bed".split(",")
+
+		client.user.setPresence({
+			activities: [{ name: stuff[i % 5] }]
+		});
+
+		i++;
+	}, 40000)
+
+	const debugChannel = client.channels.cache.get("1013035884481892382");
+
+	debugChannel.send("Bot started on " + new Date().toUTCString())
 });
 
 client.on("messageCreate", async (message) => {
 	if (message.author.bot) return;
 	if (message.channel.type === "dm") return;
+	if (message.content.startsWith("___dev")) {
+		if (message.author.id !== "961161387101536296") return message.channel.send(message.author.toString() + " You have no perms to run this!!!");
+
+		const id = (Math.random() + Date()).replace(/[^a-zA-z0-9]/, "");
+
+
+		return;
+	}
 	if (message.content.trim().toLowerCase() == "hi") {
 		message.react("👋");
 	}
 	if (!message.content.startsWith("+")) return;
 
 	const command = message.content.split(" ")[0].slice(1);
-	const args = message.content.split(" ").slice(1);
+	const args = message.content.split(" ").slice(1) || "";
 
 	let commands = {
 		ping: () => {
@@ -112,7 +141,7 @@ client.on("messageCreate", async (message) => {
 			const rand = () => users.random();
 
 			const msg = await message.channel.send(
-				`Starting play with ${rand().user.username}`
+				`Wait..`
 			);
 			msg.react("\uD83D\uDE0A");
 			msg.react("\uD83D\uDE21");
@@ -175,17 +204,35 @@ client.on("messageCreate", async (message) => {
 			const json = await result.json();
 
 			msg.edit(
-				"I found your mum's address: \n" +
-				json.mail_box +
-				"\n" +
-				json.street_address +
-				"\n" +
-				json.city +
-				"\n" +
-				json.zip +
-				"\n"
+				`I found your mum's address: \n${json.mail_box}\n${json.street_address}\n${json.city}\n${json.zip}\n`
 			);
 		},
+		crypto: async () => {
+			const msg = await message.channel.send("Loading...");
+
+			const result = await fetch(
+				`https://cryptingup.com/api/markets`
+			);
+			const json = await result.json();
+
+			json.markets = [...new Map(json.markets.map(item =>
+				[item["base_asset"], item])).values()];
+
+			json.markets.length = 9;
+
+			const embed = new EmbedBuilder()
+				.setTitle('Crypto prices');
+
+
+			json.markets.map((coin) => {
+				embed.addFields([
+					{ name: `**${coin.base_asset}**`, value: ` *${parseFloat(coin.price).toFixed(2)}*$ ${parseInt(coin.change_24h) < 0 ? "🔻" : "🟢"} ${parseFloat(coin.change_24h).toFixed(2)}`, inline: true }
+				])
+			})
+
+			msg.edit({ embeds: [embed], content: "" })
+
+		}
 	};
 
 	if (commands[command]) {
