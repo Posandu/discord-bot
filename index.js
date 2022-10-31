@@ -39,7 +39,7 @@ client.once("ready", async () => {
 		activities: [{
 			name: "Just woke up"
 		}],
-		status: "dnd"
+		status: "online"
 	})
 
 	setInterval(() => {
@@ -55,6 +55,8 @@ client.once("ready", async () => {
 	const debugChannel = client.channels.cache.get("1013035884481892382");
 
 	const startMsg = await debugChannel.send("Bot started on " + time(new Date(), "R"))
+
+
 
 	startMsg.react("🎉")
 
