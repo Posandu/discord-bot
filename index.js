@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, EmbedBuilder, Partials, AttachmentBuilder, time, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { Client, GatewayIntentBits, EmbedBuilder, Partials, AttachmentBuilder, time, ActionRowBuilder, ButtonBuilder, ButtonStyle, REST, Routes } from "discord.js";
 import express from "express";
 import fetch from 'node-fetch';
 import { createCanvas, loadImage } from "@napi-rs/canvas";
@@ -305,9 +305,20 @@ client.on("messageCreate", async (message) => {
 	if (commands[command]) {
 		commands[command]();
 	}
+
+	const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+	await rest.put(Routes.applicationCommands(client.user.id), {
+		body: [
+			{
+				name: 'ping',
+				description: 'yes'
+			}
+		]
+	});
 });
 
 client.on('interactionCreate', interaction => {
+	interaction.reply("Ok");
 	if (!interaction.isButton()) return;
 	interaction.message.delete()
 });
