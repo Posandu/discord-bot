@@ -155,7 +155,9 @@ client.on("messageCreate", async (message) => {
 	}
 });
 
-const DEFAULT_DATA = {};
+const DEFAULT_DATA = {
+	userData: {},
+};
 
 const DATA_PATH = "./data.json";
 
@@ -199,7 +201,7 @@ async function getData() {
 	// Read data from file
 	const data = await fs.promises.readFile(DATA_PATH, "utf8");
 
-	return JSON.parse(data);
+	return JSON.parse(data) || DEFAULT_DATA;
 }
 
 client.login(process.env.TOKEN);
