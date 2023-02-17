@@ -6,8 +6,8 @@ import {
 	time,
 } from "discord.js";
 import express from "express";
-import { chromium } from "playwright"; // Or 'chromium' or 'webkit'.
 import { config } from "dotenv";
+import fs from "fs";
 
 config();
 
@@ -111,39 +111,42 @@ client.on("messageCreate", async (message) => {
 
 			message.reply(`Your random number is ${number}`);
 		},
-		powercut: async () => {
-			const zone = args.join(" ").trim().toUpperCase();
+		save: async () => {
+			const data = args.join(" ");
 
-			if (!zone) return await message.reply("Please provide a zone");
+			// If no data is provided, return
+			if (!data) return message.reply("No data provided");
 
-			const msg = await message.reply("Loading...");
+			// If the data is too long, return
+			if (data.length > 69)
+				return message.reply("Data must be less than 69 characters");
 
-			const result = await getPowerCut();
-
-			const embed = new EmbedBuilder().setTitle("Power cut schedule");
-			let resp = result.map((i) => ({
-				zone: i.loadShedGroupId,
-				start: new Date(i.startTime),
-				end: new Date(i.endTime),
-			}));
-
-			resp = resp.filter((i) => i.zone.trim().toUpperCase() === zone);
-
-			resp.map((i) => {
-				embed.addFields([
-					{
-						name: `**${i.zone}**`,
-						value: `Start: ${i.start.toLocaleString()} \nEnd: ${i.end.toLocaleString()}`,
-						inline: true,
-					},
-				]);
+			// Save data
+			await saveData({
+				userData: {
+					...((await getData()).userData || {}),
+					[message.author.id]: data,
+				},
 			});
 
-			if (resp.length === 0) {
-				embed.setDescription("No power cuts for this zone today. Enjoy!");
-			}
+			message.reply("Data saved!");
+		},
+		get: async () => {
+			const data = (await getData()).userData;
 
-			msg.edit({ embeds: [embed], content: "" });
+			// If no data is found for the user, return
+			if (!data[message.author.id])
+				return message.reply("No data found for you");
+
+			message.reply({
+				content: ``,
+				embeds: [
+					new EmbedBuilder()
+						.setTitle("Your data")
+						.setDescription(data[message.author.id])
+						.setColor(((Math.random() * 0xffffff) << 0).toString(16)),
+				],
+			});
 		},
 	};
 
@@ -152,47 +155,51 @@ client.on("messageCreate", async (message) => {
 	}
 });
 
-async function getPowerCut() {
-	const today = new Date();
-	const tomorrow = new Date(today);
+const DEFAULT_DATA = {};
 
-	return new Promise(async (resolve, reject) => {
-		let resp = [];
+const DATA_PATH = "./data.json";
 
-		const browser = await chromium.launch({});
-		const page = await browser.newPage();
-		await page.goto("https://cebcare.ceb.lk/Incognito/DemandMgmtSchedule");
-		resp = await page.evaluate(`(async () => {
-        let resp = await fetch("https://cebcare.ceb.lk/Incognito/GetLoadSheddingEvents", {
-  "headers": {
-    "accept": "application/json, text/javascript, */*; q=0.01",
-    "accept-language": "en-US,en;q=0.9,si;q=0.8",
-    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-    "requestverificationtoken": document.querySelector(
-        "input[name='__RequestVerificationToken']"
-    ).value,
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
-    "sec-gpc": "1",
-    "x-requested-with": "XMLHttpRequest"
-  },
-  "referrer": "https://cebcare.ceb.lk/Incognito/DemandMgmtSchedule",
-  "referrerPolicy": "strict-origin-when-cross-origin",
-  "body": "StartTime=${today.getFullYear()}-${
-			today.getMonth() + 1
-		}-${today.getDate()}&EndTime=${tomorrow.getFullYear()}-${
-			tomorrow.getMonth() + 1
-		}-${tomorrow.getDate()}",
-  "method": "POST",
-  "mode": "cors",
-  "credentials": "include"
-});
-        return await resp.json();
-    })();
-    `);
-		await browser.close();
-		resolve(resp);
-	});
+async function fileExists() {
+	// Check if file exists
+	const file = await fs.promises
+		.access(DATA_PATH)
+		.then(() => true)
+		.catch(() => false);
+
+	return file;
 }
-client.login(process.env.TOKEN || "");
+
+async function createFile() {
+	// Create file
+	await fs.promises.writeFile(DATA_PATH, JSON.stringify(DEFAULT_DATA));
+
+	return true;
+}
+
+async function saveData(data) {
+	if (!data) return false;
+
+	// Check if file exists
+	const file = await fileExists();
+
+	// If file doesn't exist, create it
+	if (!file) await createFile();
+
+	// Write data to file
+	await fs.promises.writeFile(DATA_PATH, JSON.stringify(data));
+}
+
+async function getData() {
+	// Check if file exists
+	const file = await fileExists();
+
+	// If file doesn't exist, create it
+	if (!file) await createFile();
+
+	// Read data from file
+	const data = await fs.promises.readFile(DATA_PATH, "utf8");
+
+	return JSON.parse(data);
+}
+
+client.login(process.env.TOKEN);
