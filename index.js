@@ -4,14 +4,12 @@ import {
 	EmbedBuilder,
 	Partials,
 	time,
-	ActionRowBuilder,
-	ButtonBuilder,
-	ButtonStyle,
-	REST,
-	Routes,
 } from "discord.js";
 import express from "express";
-import fetch from "node-fetch";
+import { chromium } from "playwright"; // Or 'chromium' or 'webkit'.
+import { config } from "dotenv";
+
+config();
 
 const app = express();
 const port = process.env.PORT || 80;
@@ -20,9 +18,7 @@ app.get("/", (req, res) => {
 	res.send("Hello World!");
 });
 
-app.listen(port, () => {
-	console.log(`Example app listening on port ${port}`);
-});
+app.listen(port, () => {});
 
 const client = new Client({
 	intents: [
@@ -41,27 +37,10 @@ const client = new Client({
 client.once("ready", async () => {
 	console.log("Ready!");
 
-	let i = 0;
-
 	client.user.setPresence({
-		activities: [
-			{
-				name: "Just woke up",
-			},
-		],
-		status: "online",
+		afk: true,
+		status: "idle",
 	});
-
-	setInterval(() => {
-		let stuff =
-			"with your mom,with daddy,with code,with Twitter,with bed".split(",");
-
-		client.user.setPresence({
-			activities: [{ name: stuff[i % 5] }],
-		});
-
-		i++;
-	}, 40000);
 
 	const debugChannel = client.channels.cache.get("1013035884481892382");
 
@@ -70,219 +49,99 @@ client.once("ready", async () => {
 	);
 
 	startMsg.react("🎉");
-
-	app.get("/a", async (req, res) => {
-		debugChannel.send("opened /a");
-	});
 });
 
 client.on("messageCreate", async (message) => {
 	if (message.author.bot) return;
-	if (message.content.startsWith("___dev")) {
-		if (message.author.id !== "961161387101536296")
-			return message.channel.send(
-				message.author.toString() + " You have no perms to run this!!!"
-			);
-
-		const id = (Math.random() + Date()).replace(/[^a-zA-z0-9]/, "");
-
-		const row = new ActionRowBuilder().addComponents(
-			new ButtonBuilder()
-				.setCustomId("primary")
-				.setLabel("Click me!")
-				.setStyle(ButtonStyle.Primary)
-		);
-
-		await message.reply({ content: "I think you should,", components: [row] });
-
-		return;
-	}
-	if (message.content.trim().toLowerCase() == "hi") {
-		message.react("👋");
-	}
-	if (message.content.trim().toLowerCase() == "ok") {
-		message.react("🆗");
-	}
-	if (message.content.startsWith("secretSay")) {
-		const channel = message.channel.send(
-			message.content.replace("secretSay", "")
-		);
-		message.delete();
-	}
-	//
-
 	if (!message.content.startsWith("+")) return;
+
 	const command = message.content.split(" ")[0].slice(1);
 	const args = message.content.split(" ").slice(1) || "";
 
 	let commands = {
 		ping: async () => {
-			const msg = await message.channel.send(
-				`Pong! Latency is ${client.ws.ping}ms.`
-			);
-			let i = 0;
-			message.react("🕺");
-			const intrvl = setInterval(() => {
-				msg.edit(`Pong! Latency is ${client.ws.ping}ms. [${++i}]`);
-			}, 1000);
-			setTimeout(() => {
-				clearInterval(intrvl);
-			}, 6000);
+			const msg = await message.reply("Pinging...");
+
+			const embed = new EmbedBuilder()
+				.setTitle("Pong!")
+				.setDescription(
+					`**Latency:** ${
+						msg.createdTimestamp - message.createdTimestamp
+					}ms\n**API Latency:** ${Math.round(client.ws.ping)}ms`
+				)
+				.setColor(((Math.random() * 0xffffff) << 0).toString(16));
+
+			msg.edit({
+				content: null,
+				embeds: [embed],
+			});
 		},
 		help: () => {
 			const c = Object.keys(commands);
 
-			const embed = new EmbedBuilder()
-				.setTitle("Help")
-				.setDescription("This is a list of commands")
-				.addFields(
-					c.map((command) => ({
-						name: command,
-						value: `\`+${command}\``,
-					}))
-				);
-
-			message.channel.send({
-				embeds: [embed],
-			});
+			message.reply(`**Commands:**\n${c.map((x) => `\`+${x}\``).join(", ")}`);
 		},
 		say: () => {
 			message.channel.send({
 				content: [...args].join(" ") || "no message :(",
 				allowedMentions: {
-					users: ["123456789012345678"],
-					roles: ["102938475665748392"],
+					users: [message.author.id],
+					roles: [],
 				},
 			});
 		},
-		match: async () => {
-			const users = message.guild.members.cache.filter(
-				(member) => !member.user.bot
-			);
-			const rand = users.random();
-
-			const msg = await message.channel.send(
-				`${message.author.username} + ${rand.user.username}`
-			);
-			msg.react("🙄");
-		},
 		math: () => {
 			const isMath = args.join(" ").match(/[0-9]+[+-/*][0-9]+/);
-			if (!isMath) return message.channel.send("Invalid math expression");
+			if (!isMath) return message.reply("Invalid math expression");
 
 			try {
 				const result = eval(args.join(" "));
-				message.channel.send(`${args.join(" ")} = ${result}`);
+				message.reply(`${args.join(" ")} = ${result}`);
 			} catch (error) {
-				message.channel.send(`Error: ${error}`);
+				message.reply(`Error: ${error}`);
 			}
 		},
 		roll: () => {
 			const roll = Math.floor(Math.random() * 6) + 1;
-			message.channel.send(`You rolled a ${roll}`);
+			message.reply(`You rolled a ${roll}`);
 		},
-		luckynumber: () => {
+		rand: () => {
 			let number = message.author.discriminator;
 			number = Math.round(Math.random() * +number);
 
-			message.channel.send(`Your lucky number is ${number}`);
+			message.reply(`Your random number is ${number}`);
 		},
-		play: async () => {
-			const users = message.guild.members.cache.filter(
-				(member) => member.user.bot === false && member.id !== message.author.id
-			);
-			const rand = () => users.random();
+		powercut: async () => {
+			const zone = args.join(" ").trim().toUpperCase();
 
-			const msg = await message.channel.send(`Wait..`);
-			msg.react("\uD83D\uDE0A");
-			msg.react("\uD83D\uDE21");
-			msg.react("\uD83D\uDE2D");
+			if (!zone) return await message.reply("Please provide a zone");
 
-			setTimeout(() => {
-				msg.reactions.removeAll();
+			const msg = await message.reply("Loading...");
 
-				setTimeout(() => {
-					msg.edit(`${rand().user.username} won!`);
-				}, 1000);
-			}, 4000);
-		},
-		me: () => {
-			const embed = new EmbedBuilder();
+			const result = await getPowerCut();
 
-			embed.setTitle("About you").setDescription(`
-                **Name:** ${message.author.username}
-                **ID:** ${message.author.id}
-                **Discriminator:** ${message.author.discriminator}
-            `);
+			const embed = new EmbedBuilder().setTitle("Power cut schedule");
+			let resp = result.map((i) => ({
+				zone: i.loadShedGroupId,
+				start: new Date(i.startTime),
+				end: new Date(i.endTime),
+			}));
 
-			message.channel.send({
-				embeds: [embed],
-			});
-		},
-		die: async () => {
-			const msg = await message.reply(`Ok I will die in 5`);
-			setTimeout(() => {
-				msg.edit(`Ok I will die in 4`);
-				setTimeout(() => {
-					msg.edit(`Ok I will die in 3`);
-					setTimeout(() => {
-						msg.edit(`Ok I will die in 2`);
-						setTimeout(() => {
-							msg.edit(`Ok I will die in 1`);
-							setTimeout(() => {
-								msg.edit(`Ok I will die now`);
+			resp = resp.filter((i) => i.zone.trim().toUpperCase() === zone);
 
-								message.react("😛");
-								message.react("😂");
-
-								message.channel.send(
-									"Haha fooled you " + message.author.toString()
-								);
-							}, 1000);
-						}, 1000);
-					}, 1000);
-				}, 1000);
-			}, 1000);
-		},
-		findme: async () => {
-			const msg = await message.reply(`Hmm, I'm looking for you`);
-
-			const result = await fetch(
-				`https://random-data-api.com/api/address/random_address`
-			);
-			const json = await result.json();
-
-			msg.edit(
-				`I found your mum's address: \n${json.mail_box}\n${json.street_address}\n${json.city}\n${json.zip}\n`
-			);
-		},
-		crypto: async () => {
-			const msg = await message.channel.send("Loading...");
-
-			const result = await fetch(`https://cryptingup.com/api/markets`);
-			const json = await result.json();
-
-			json.markets = [
-				...new Map(
-					json.markets.map((item) => [item["base_asset"], item])
-				).values(),
-			];
-
-			json.markets.length = 15;
-
-			const embed = new EmbedBuilder().setTitle("Crypto prices");
-
-			json.markets.map((coin) => {
+			resp.map((i) => {
 				embed.addFields([
 					{
-						name: `**${coin.base_asset}**`,
-						value: ` *${parseFloat(coin.price).toFixed(8)}*$ ${
-							parseInt(coin.change_24h) < 0 ? "🔻" : "🟢"
-						} ${parseFloat(coin.change_24h).toFixed(2)}`,
+						name: `**${i.zone}**`,
+						value: `Start: ${i.start.toLocaleString()} \nEnd: ${i.end.toLocaleString()}`,
 						inline: true,
 					},
 				]);
 			});
+
+			if (resp.length === 0) {
+				embed.setDescription("No power cuts for this zone today. Enjoy!");
+			}
 
 			msg.edit({ embeds: [embed], content: "" });
 		},
@@ -291,22 +150,49 @@ client.on("messageCreate", async (message) => {
 	if (commands[command]) {
 		commands[command]();
 	}
+});
 
-	const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
-	await rest.put(Routes.applicationCommands(client.user.id), {
-		body: [
-			{
-				name: "ping",
-				description: "yes",
-			},
-		],
+async function getPowerCut() {
+	const today = new Date();
+	const tomorrow = new Date(today);
+
+	return new Promise(async (resolve, reject) => {
+		let resp = [];
+
+		const browser = await chromium.launch({});
+		const page = await browser.newPage();
+		await page.goto("https://cebcare.ceb.lk/Incognito/DemandMgmtSchedule");
+		resp = await page.evaluate(`(async () => {
+        let resp = await fetch("https://cebcare.ceb.lk/Incognito/GetLoadSheddingEvents", {
+  "headers": {
+    "accept": "application/json, text/javascript, */*; q=0.01",
+    "accept-language": "en-US,en;q=0.9,si;q=0.8",
+    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "requestverificationtoken": document.querySelector(
+        "input[name='__RequestVerificationToken']"
+    ).value,
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "sec-gpc": "1",
+    "x-requested-with": "XMLHttpRequest"
+  },
+  "referrer": "https://cebcare.ceb.lk/Incognito/DemandMgmtSchedule",
+  "referrerPolicy": "strict-origin-when-cross-origin",
+  "body": "StartTime=${today.getFullYear()}-${
+			today.getMonth() + 1
+		}-${today.getDate()}&EndTime=${tomorrow.getFullYear()}-${
+			tomorrow.getMonth() + 1
+		}-${tomorrow.getDate()}",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+        return await resp.json();
+    })();
+    `);
+		await browser.close();
+		resolve(resp);
 	});
-});
-
-client.on("interactionCreate", (interaction) => {
-	interaction.reply("Ok");
-	if (!interaction.isButton()) return;
-	interaction.message.delete();
-});
-
+}
 client.login(process.env.TOKEN || "");

@@ -2,14 +2,18 @@ lockfileVersion: 5.4
 
 specifiers:
   discord.js: ^14.1.2
+  dotenv: ^16.0.3
   express: ^4.18.1
   node-fetch: ^3.2.10
+  playwright: ^1.30.0
   undici: ^5.10.0
 
 dependencies:
   discord.js: 14.7.1
+  dotenv: 16.0.3
   express: 4.18.2
   node-fetch: 3.3.0
+  playwright: 1.30.0
   undici: 5.19.1
 
 packages:
@@ -203,6 +207,11 @@ packages:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    dev: false
+
+  /dotenv/16.0.3:
+    resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
+    engines: {node: '>=12'}
     dev: false
 
   /ee-first/1.1.1:
@@ -460,6 +469,21 @@ packages:
   /peek-readable/5.0.0:
     resolution: {integrity: sha512-YtCKvLUOvwtMGmrniQPdO7MwPjgkFBtFIrmfSbYmYuq3tKDV/mcfAhBth1+C3ru7uXIZasc/pHnb+YDYNkkj4A==}
     engines: {node: '>=14.16'}
+    dev: false
+
+  /playwright-core/1.30.0:
+    resolution: {integrity: sha512-7AnRmTCf+GVYhHbLJsGUtskWTE33SwMZkybJ0v6rqR1boxq2x36U7p1vDRV7HO2IwTZgmycracLxPEJI49wu4g==}
+    engines: {node: '>=14'}
+    hasBin: true
+    dev: false
+
+  /playwright/1.30.0:
+    resolution: {integrity: sha512-ENbW5o75HYB3YhnMTKJLTErIBExrSlX2ZZ1C/FzmHjUYIfxj/UnI+DWpQr992m+OQVSg0rCExAOlRwB+x+yyIg==}
+    engines: {node: '>=14'}
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      playwright-core: 1.30.0
     dev: false
 
   /proxy-addr/2.0.7:

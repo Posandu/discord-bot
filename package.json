@@ -4,15 +4,17 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"start": "node index"
+		"start": "npx playwright install && node index.js"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
 		"discord.js": "^14.1.2",
+		"dotenv": "^16.0.3",
 		"express": "^4.18.1",
 		"node-fetch": "^3.2.10",
+		"playwright": "^1.30.0",
 		"undici": "^5.10.0"
 	},
 	"type": "module"
