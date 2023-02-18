@@ -13,6 +13,7 @@ config();
 
 const app = express();
 const port = process.env.PORT || 80;
+const OWNER_ID = "961161387101536296";
 
 app.get("/", (req, res) => {
 	res.send("Hello World!");
@@ -148,14 +149,36 @@ client.on("messageCreate", async (message) => {
 				],
 			});
 		},
+		devMode: async () => {
+			if(!process.env.PROD) return;
+
+			if (message.author.id !== OWNER_ID) return;
+
+			globalThis.devMode = !globalThis.devMode;
+
+			await saveData({
+				...((await getData()) || {}),
+				devMode: globalThis.devMode,
+			});
+
+			message.reply(`Dev mode is now ${devMode ? "on" : "off"}`);
+		},
 	};
 
 	if (commands[command]) {
+		if (command === "devMode" && message.author.id == OWNER_ID) {
+			commands[command]();
+			return;
+		}
+
+		if (devMode) return;
+
 		commands[command]();
 	}
 });
 
 const DEFAULT_DATA = {
+	devMode: false,
 	userData: {},
 };
 
@@ -203,5 +226,10 @@ async function getData() {
 
 	return JSON.parse(data) || DEFAULT_DATA;
 }
+
+(async () => {
+	globalThis.devMode = (await getData()).devMode;
+	console.log("DEV MODE: " + devMode);
+})();
 
 client.login(process.env.TOKEN);
