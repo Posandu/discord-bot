@@ -43,7 +43,7 @@ client.once("ready", async () => {
 		status: "idle",
 	});
 
-	const debugChannel = client.channels.cache.get("1013035884481892382");
+	const debugChannel = client.channels.cache.get("1078716206703448176");
 
 	const startMsg = await debugChannel.send(
 		"Bot started on " + time(new Date(), "R")
