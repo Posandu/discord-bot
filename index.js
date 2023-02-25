@@ -39,8 +39,7 @@ client.once("ready", async () => {
 	console.log("Ready!");
 
 	client.user.setPresence({
-		afk: true,
-		status: "idle",
+		status: "online",
 	});
 
 	const debugChannel = client.channels.cache.get("1078716206703448176");
@@ -149,8 +148,27 @@ client.on("messageCreate", async (message) => {
 				],
 			});
 		},
+		save: async () => {
+			const text = args.join(" ");
+			const user = message.mentions.users.first();
+			const amount =
+				parseInt(
+					text?.match(/[0-9]+/) ? text?.match(/[0-9]+/)[0] : "100" || "100"
+				) || 100;
+
+			const messages = await message.channel.fetch({
+				limit: amount,
+			});
+
+			const data = await messages.awaitMessages({
+				filter: (m) => m.author.id === user.id,
+				time: 1000 * 60 * 5,
+			});
+
+			console.log(data);
+		},
 		devMode: async () => {
-			if(!process.env.PROD) return;
+			if (!process.env.PROD) return;
 
 			if (message.author.id !== OWNER_ID) return;
 
@@ -162,6 +180,20 @@ client.on("messageCreate", async (message) => {
 			});
 
 			message.reply(`Dev mode is now ${devMode ? "on" : "off"}`);
+
+			if (devMode) {
+				// Set client status to dev mode
+				client.user.setPresence({
+					afk: true,
+					status: "idle",
+				});
+			} else {
+				// Set client status to normal
+				client.user.setPresence({
+					afk: false,
+					status: "online",
+				});
+			}
 		},
 	};
 
