@@ -4,6 +4,9 @@ import {
 	EmbedBuilder,
 	Partials,
 	time,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
 } from "discord.js";
 import express from "express";
 import { config } from "dotenv";
@@ -49,6 +52,33 @@ client.once("ready", async () => {
 	);
 
 	startMsg.react("🎉");
+});
+
+client.on("interactionCreate", async (interaction) => {
+	if (interaction.isButton()) {
+		if (interaction.customId === "create__channel") {
+			const thread = await interaction.guild.channels.cache
+				.get("1079023549798432909")
+				.threads.create({
+					name: "test",
+					autoArchiveDuration: 60,
+					reason: "test",
+				});
+
+			interaction.reply({
+				content: `Created thread!`,
+				ephemeral: true,
+			});
+
+			if (thread.joinable) {
+				thread.join();
+
+				thread.send({
+					content: `${interaction.user} joined the thread!`,
+				});
+			}
+		}
+	}
 });
 
 client.on("messageCreate", async (message) => {
