@@ -71,13 +71,15 @@ client.once("ready", async () => {
 			.setImage(meme.url)
 			.setColor(0x00ff00);
 
-		debugChannel.send({
+		generalChannel.send({
 			embeds: [embed],
 		});
 	};
 
-	// Send a meme every 10 minutes
-	setInterval(sendMeme, 1000 * 60 * 10);
+	// Send a meme every 6 hours
+	setInterval(() => {
+		sendMeme();
+	}, 1000 * 60 * 60 * 6); 
 
 	// Send a meme on startup
 	sendMeme();
