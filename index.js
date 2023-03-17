@@ -76,10 +76,10 @@ client.once("ready", async () => {
 		});
 	};
 
-	// Send a meme every 6 hours
+	// Send a meme every 1 hour
 	setInterval(() => {
 		sendMeme();
-	}, 1000 * 60 * 60 * 6); 
+	}, 1000 * 60 * 60 * 1); 
 
 	// Send a meme on startup
 	sendMeme();
