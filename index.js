@@ -8,6 +8,7 @@ import {
 import express from "express";
 import { config } from "dotenv";
 import fs from "fs";
+import fetch from "node-fetch";
 
 config();
 
