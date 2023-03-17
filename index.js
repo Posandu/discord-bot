@@ -71,7 +71,7 @@ client.once("ready", async () => {
 			.setImage(meme.url)
 			.setColor(0x00ff00);
 
-		generalChannel.send({
+		generalChannel.send({ 
 			embeds: [embed],
 		});
 	};
