@@ -50,39 +50,6 @@ client.once("ready", async () => {
 	);
 
 	startMsg.react("🎉");
-
-	const generalChannel = client.channels.cache.get("990984025126608957");
-	/**
-	Send a random meme from reddit 
-	*/
-	const sendMeme = async () => {
-		const subreddits = ["dankmemes", "memes", "meirl", "me_irl", "funny"];
-		const subreddit = subreddits[Math.floor(Math.random() * subreddits.length)];
-
-		const data = await fetch(
-			`https://api.reddit.com/r/${subreddit}/random`
-		).then((res) => res.json());
-
-		const meme = data[0].data.children[0].data;
-
-		const embed = new EmbedBuilder()
-			.setTitle(meme.title)
-			.setURL(`https://reddit.com${meme.permalink}`)
-			.setImage(meme.url)
-			.setColor(0x00ff00);
-
-		generalChannel.send({ 
-			embeds: [embed],
-		});
-	};
-
-	// Send a meme every 1 hour
-	setInterval(() => {
-		sendMeme();
-	}, 1000 * 60 * 60 * 1); 
-
-	// Send a meme on startup
-	sendMeme();
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -228,6 +195,25 @@ client.on("messageCreate", async (message) => {
 
 			console.log(data);
 		},
+		meme: async () => {
+			const subreddits = ["dankmemes", "memes", "meirl", "me_irl", "funny"];
+			const subreddit = subreddits[Math.floor(Math.random() * subreddits.length)];
+
+			const data = await fetch(
+				`https://api.reddit.com/r/${subreddit}/random`
+			).then((res) => res.json());
+
+			const meme = data[0].data.children[0].data;
+
+			const embed = new EmbedBuilder()
+				.setTitle(meme.title+" "+subreddit)
+				.setURL(`https://reddit.com${meme.permalink}`)
+				.setImage(meme.url);
+
+			message.reply({ 
+				embeds: [embed],
+			});
+		}
 		devMode: async () => {
 			if (!process.env.PROD) return;
 
