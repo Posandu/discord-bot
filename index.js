@@ -213,7 +213,7 @@ client.on("messageCreate", async (message) => {
 			message.reply({ 
 				embeds: [embed],
 			});
-		}
+		},
 		devMode: async () => {
 			if (!process.env.PROD) return;
 
