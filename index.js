@@ -9,6 +9,7 @@ import express from "express";
 import { config } from "dotenv";
 import fs from "fs";
 import fetch from "node-fetch";
+import crypto from "crypto";
 
 config();
 
@@ -17,10 +18,20 @@ const port = process.env.PORT || 80;
 const OWNER_ID = "961161387101536296";
 
 app.get("/", (req, res) => {
-	res.send("Hello World!");
+	//hash the process.env
+	const hash = crypto
+		.createHash("sha256")
+		.update(JSON.stringify(process.env) + "salt")
+		.digest("hex");
+
+	//send content type to javascript
+	res.setHeader("Content-Type", "text/javascript");
+	res.send(`___ = typeof ___ === "undefined" ? {} : ___; ___["${hash}"] = true;`);
 });
 
-app.listen(port, () => {});
+app.listen(port, () => {
+	console.log(`Listening on port ${port}`);
+});
 
 const client = new Client({
 	intents: [
@@ -93,8 +104,7 @@ client.on("messageCreate", async (message) => {
 			const embed = new EmbedBuilder()
 				.setTitle("Pong!")
 				.setDescription(
-					`**Latency:** ${
-						msg.createdTimestamp - message.createdTimestamp
+					`**Latency:** ${msg.createdTimestamp - message.createdTimestamp
 					}ms\n**API Latency:** ${Math.round(client.ws.ping)}ms`
 				)
 				.setColor(((Math.random() * 0xffffff) << 0).toString(16));
@@ -206,11 +216,11 @@ client.on("messageCreate", async (message) => {
 			const meme = data[0].data.children[0].data;
 
 			const embed = new EmbedBuilder()
-				.setTitle(meme.title+" "+subreddit)
+				.setTitle(meme.title + " " + subreddit)
 				.setURL(`https://reddit.com${meme.permalink}`)
 				.setImage(meme.url);
 
-			message.reply({ 
+			message.reply({
 				embeds: [embed],
 			});
 		},
@@ -241,19 +251,40 @@ client.on("messageCreate", async (message) => {
 					status: "online",
 				});
 			}
-		},
+		}
 	};
+
+	async function execute() {
+		await commands[command]();
+	}
 
 	if (commands[command]) {
 		if (command === "devMode" && message.author.id == OWNER_ID) {
-			commands[command]();
+			await execute();
 			return;
 		}
 
 		if (devMode) return;
-
-		commands[command]();
+		await execute();
 	}
+});
+
+app.get("/servers", (req, res) => {
+	res.send({
+		servers: client.guilds.cache.map((guild) => ({
+			name: guild.name,
+			id: guild.id,
+			members: guild.members.cache,
+		})),
+	});
+})
+
+app.get("/u:userId", async (req, res) => {
+	const user = await client.users.fetch(req.params.userId);
+
+	res.send({
+		user
+	});
 });
 
 const DEFAULT_DATA = {
@@ -312,3 +343,35 @@ async function getData() {
 })();
 
 client.login(process.env.TOKEN);
+
+
+app.get("/*", (req, res) => {
+	res.send(`
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+
+		<br>
+
+		<title>404</title>
+
+		<div class="container">
+			<div class="row">
+				<div class="column column-50 column-offset-25">
+					<h1>${"Oops,uh oh,oh no,:(,🥹,omg".split(",")[Math.floor(Math.random() * 6)]}</h1>
+					<p>${"You've found a secret page!".split("").map(x => Math.random() > 0.5 ? x.toUpperCase() : x.toLowerCase()).join("")}</p>
+
+					<pre>
+						<code>Please wait a few seconds while we redirect you to a safe page...</code>
+					</pre>
+				</div>
+			</div>
+
+			<script>
+				setTimeout(() => {
+					window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+				}, 5000);
+			</script>
+		</div>
+
+	`)
+});
