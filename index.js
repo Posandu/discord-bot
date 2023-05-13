@@ -47,6 +47,58 @@ const client = new Client({
 	partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
+const addVistor = async (url) => {
+	const statChannel = client.channels.cache.get("1106932219068567646");
+	const msgId = "1106933269758480465";
+
+	const msg = await statChannel.messages.fetch(msgId);
+
+	//format:
+	// `url`: `visitors`
+	let content = msg.content.trim();
+
+	try {
+		content = JSON.parse(content);
+	} catch (error) {
+		content = {};
+	}
+
+	if (url) {
+		if (!content[url]) content[url] = 0;
+		content[url]++;
+	}
+
+	const embed = new EmbedBuilder()
+		.setTitle("Stats")
+		.setDescription(
+			Object.keys(content)
+				.map((x) => `\`${x}\`: \`${content[x]}\``)
+				.join("\n") || "No visitors :("
+		)
+
+		.setColor(((Math.random() * 0xffffff) << 0).toString(16));
+
+	//sort by most visitors
+	content = Object.fromEntries(
+		Object.entries(content).sort(([, a], [, b]) => b - a)
+	);
+
+	await msg.edit({
+		content: JSON.stringify(content),
+		embeds: [embed],
+	});
+}
+
+app.post("/_/uwu", async (req, res) => {
+	const url = req.query.url;
+
+	if (!url) return res.status(400).send("No url provided");
+
+	await addVistor(url);
+
+	res.jsonp("What was that supposed to mean?");
+});
+
 client.once("ready", async () => {
 	console.log("Ready!");
 
@@ -61,6 +113,8 @@ client.once("ready", async () => {
 	);
 
 	startMsg.react("🎉");
+
+	await addVistor();
 });
 
 client.on("interactionCreate", async (interaction) => {
