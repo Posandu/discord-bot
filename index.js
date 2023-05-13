@@ -96,7 +96,10 @@ app.post("/_/uwu", async (req, res) => {
 
 	await addVistor(url);
 
-	res.jsonp("What was that supposed to mean?");
+	//disable cors
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	
+	res.status(400).jsonp("What was that supposed to mean?");
 });
 
 client.once("ready", async () => {
