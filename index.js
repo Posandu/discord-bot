@@ -48,6 +48,7 @@ const client = new Client({
 });
 
 const addVistor = async (url) => {
+	return;
 	const statChannel = client.channels.cache.get("1106932219068567646");
 	const msgId = "1106933269758480465";
 
