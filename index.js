@@ -33,6 +33,8 @@ app.listen(port, () => {
 	console.log(`Listening on port ${port}`);
 });
 
+let watchingUsers = [];
+
 const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
@@ -99,7 +101,7 @@ app.post("/_/uwu", async (req, res) => {
 
 	//disable cors
 	res.setHeader("Access-Control-Allow-Origin", "*");
-	
+
 	res.status(400).jsonp("What was that supposed to mean?");
 });
 
@@ -117,8 +119,6 @@ client.once("ready", async () => {
 	);
 
 	startMsg.react("🎉");
-
-	await addVistor();
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -309,6 +309,67 @@ client.on("messageCreate", async (message) => {
 					status: "online",
 				});
 			}
+		},
+		about: async () => {
+			const data = await getData();
+
+			const embed = new EmbedBuilder()
+				.setTitle("About")
+				.setDescription(
+					`Created by *${client.users.cache.get(OWNER_ID).tag}*\n**Dev mode:** ${data.devMode ? "on" : "off"}\nhttps://posandu.com`
+				)
+
+				.setColor(((Math.random() * 0xffffff) << 0).toString(16));
+
+			message.reply({
+				embeds: [embed],
+			});
+		},
+		watch: async () => {
+			const user = message.mentions.users.first();
+
+			if (!user) return message.reply("Invalid arguments");
+
+			const msg = await message.channel.send({
+				content: `${user} is now being watched. API route: /w${user.id}`,
+			});
+
+			watchingUsers.push(user.id);
+
+			await saveData({
+				...((await getData()) || {}),
+				watchingUsers,
+			});
+		},
+		unwatch: async () => {
+			const user = message.mentions.users.first();
+
+			if (!user) return message.reply("Invalid arguments");
+
+			const msg = await message.channel.send({
+				content: `${user} is no longer being watched.`,
+			});
+
+			watchingUsers = watchingUsers.filter((x) => x !== user.id);
+
+			await saveData({
+				...((await getData()) || {}),
+				watchingUsers,
+			});
+
+			await msg.react("👋");
+		},
+		getWatching: async () => {
+			const data = await getData();
+
+			message.reply({
+				content: `**Watching users:**\n${data.watchingUsers
+					.map((x) => `<@${x}>`)
+					.join("\n")}`,
+				allowedMentions: {
+					users: [],
+				}
+			});
 		}
 	};
 
@@ -402,6 +463,16 @@ async function getData() {
 
 client.login(process.env.TOKEN);
 
+app.get("/w:userId", async (req, res) => {
+	if (!watchingUsers.includes(req.params.userId))
+		return res.status(400).send("Not watching user");
+
+	const user = await client.users.fetch(req.params.userId);
+
+	res.send({
+		user,
+	});
+});
 
 app.get("/*", (req, res) => {
 	res.send(`
